@@ -1,0 +1,21 @@
+# Generated dependencies and build output
+**/node_modules/
+**/target/
+**/dist/
+**/coverage/
+**/playwright-report/
+**/test-results/
+**/data/
+*.log
+# Local secrets and editor settings
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.pem
+*.key
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db

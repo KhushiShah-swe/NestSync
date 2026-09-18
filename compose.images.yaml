@@ -1,0 +1,5 @@
+services:
+  backend:
+    image: ghcr.io/khushishah-swe/nestsync-backend:${NESTSYNC_IMAGE_TAG:-latest}
+  frontend:
+    image: ghcr.io/khushishah-swe/nestsync-frontend:${NESTSYNC_IMAGE_TAG:-latest}

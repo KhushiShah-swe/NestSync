@@ -1,0 +1,37 @@
+name: User story
+description: Propose a scoped feature with measurable acceptance criteria.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: story
+    attributes:
+      label: User story
+      placeholder: As a roommate, I want to ... so that ...
+    validations:
+      required: true
+  - type: textarea
+    id: value
+    attributes:
+      label: Benefit and value
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      placeholder: '- [ ] Given ..., when ..., then ...'
+    validations:
+      required: true
+  - type: dropdown
+    id: points
+    attributes:
+      label: Story points
+      options: ['1', '2', '3', '5', '8', '13']
+  - type: input
+    id: sprint
+    attributes:
+      label: Suggested sprint
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies and test plan

@@ -1,0 +1,27 @@
+version: 2
+updates:
+  - package-ecosystem: maven
+    directory: /nestsync-backend
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+  - package-ecosystem: npm
+    directory: /nestsync-frontend
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      testing:
+        patterns: ['vitest', '@vitest/*', '@testing-library/*']
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+  - package-ecosystem: docker
+    directory: /nestsync-backend
+    schedule:
+      interval: weekly
+  - package-ecosystem: docker
+    directory: /nestsync-frontend
+    schedule:
+      interval: weekly

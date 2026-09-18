@@ -1,0 +1,206 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  backend:
+    name: Backend tests and coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: nestsync-backend
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - run: ./mvnw -B -ntp verify
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: backend-reports
+          path: |
+            nestsync-backend/target/surefire-reports
+            nestsync-backend/target/site/jacoco
+          retention-days: 14
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: backend-jar
+          path: nestsync-backend/target/nestsync-backend-*.jar
+          retention-days: 7
+  frontend:
+    name: Frontend lint, tests, and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: nestsync-frontend
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: nestsync-frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm run test:coverage
+      - run: npm run build
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: frontend-reports-and-build
+          path: |
+            nestsync-frontend/coverage
+            nestsync-frontend/dist
+          retention-days: 14
+  mysql:
+    name: MySQL integration tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_DATABASE: nestsync_test
+          MYSQL_USER: nestsync
+          MYSQL_PASSWORD: ci-only-password
+          MYSQL_ROOT_PASSWORD: ci-only-root-password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -u root -pci-only-root-password"
+          --health-interval=10s --health-timeout=5s --health-retries=12
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - run: ./mvnw -B -ntp -Dtest=ApiIntegrationTest test
+        working-directory: nestsync-backend
+        env:
+          TEST_DATABASE_URL: jdbc:mysql://127.0.0.1:3306/nestsync_test
+          TEST_DATABASE_USERNAME: nestsync
+          TEST_DATABASE_PASSWORD: ci-only-password
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: mysql-test-reports
+          path: nestsync-backend/target/surefire-reports
+          retention-days: 14
+  browser:
+    name: Browser end-to-end tests
+    needs: [backend, frontend]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: nestsync-frontend/package-lock.json
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        with:
+          name: backend-jar
+          path: backend-artifact
+      - name: Start API and wait for readiness
+        env:
+          SPRING_DATASOURCE_URL: jdbc:h2:mem:e2e;MODE=MySQL;DB_CLOSE_DELAY=-1
+          SPRING_JPA_HIBERNATE_DDL_AUTO: create-drop
+        run: |
+          java -jar backend-artifact/*.jar > backend-e2e.log 2>&1 &
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://localhost:8080/actuator/health; then exit 0; fi
+            sleep 2
+          done
+          cat backend-e2e.log
+          exit 1
+      - run: npm ci
+        working-directory: nestsync-frontend
+      - run: npx playwright install --with-deps chromium
+        working-directory: nestsync-frontend
+      - run: npm run test:e2e
+        working-directory: nestsync-frontend
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: browser-reports
+          path: |
+            nestsync-frontend/playwright-report
+            nestsync-frontend/test-results
+            backend-e2e.log
+          retention-days: 14
+  containers:
+    name: Docker Compose smoke test
+    needs: [backend, frontend]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DB_PASSWORD: ci-only-database-password
+      MYSQL_ROOT_PASSWORD: ci-only-root-password
+      JWT_SECRET: ci-only-signing-secret-longer-than-32-bytes
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - run: docker compose up --build --detach --wait --wait-timeout 240
+      - run: python3 scripts/smoke-test.py
+      - name: Verify frontend and SPA fallback
+        run: |
+          curl --fail http://localhost:3000/ | grep -q 'NestSync'
+          curl --fail http://localhost:3000/expenses | grep -q 'NestSync'
+      - if: failure()
+        run: docker compose logs --no-color
+      - if: always()
+        run: docker compose down --volumes
+  publish:
+    name: Publish verified containers
+    needs: [backend, frontend, mysql, browser, containers]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        component: [backend, frontend]
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+      - name: Calculate lowercase image name
+        id: image
+        env:
+          OWNER: ${{ github.repository_owner }}
+          COMPONENT: ${{ matrix.component }}
+        run: echo "name=ghcr.io/${OWNER,,}/nestsync-${COMPONENT}" >> "$GITHUB_OUTPUT"
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: ./nestsync-${{ matrix.component }}
+          push: true
+          tags: |
+            ${{ steps.image.outputs.name }}:latest
+            ${{ steps.image.outputs.name }}:sha-${{ github.sha }}
+          labels: org.opencontainers.image.source=https://github.com/${{ github.repository }}

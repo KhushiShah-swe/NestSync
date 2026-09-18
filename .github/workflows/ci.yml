@@ -54,6 +54,7 @@ jobs:
           cache: npm
           cache-dependency-path: nestsync-frontend/package-lock.json
       - run: npm ci
+      - run: npm audit --audit-level=high
       - run: npm run lint
       - run: npm run format:check
       - run: npm run test:coverage

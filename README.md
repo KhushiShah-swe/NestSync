@@ -214,7 +214,7 @@ Meaningful checks include:
 Every pull request and push to `main` triggers:
 
 1. Backend tests, coverage, and JAR packaging.
-2. Frontend lint, formatting, tests, coverage, and production build.
+2. Frontend dependency audit, lint, formatting, tests, coverage, and production build.
 3. API integration tests against MySQL 8.4.
 4. Browser end-to-end tests.
 5. A full Docker Compose build and smoke test.

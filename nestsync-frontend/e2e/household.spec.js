@@ -5,7 +5,12 @@ test('a roommate can register, track a bill, complete a chore, and sign out', as
   await page.getByLabel('Your name').fill('Taylor')
   await page.getByLabel('Email address').fill(`taylor-${stamp}@example.com`)
   await page.getByLabel('Password', { exact: true }).fill('demo-password-123')
+  const registration = page.waitForResponse(
+    (response) =>
+      response.url().endsWith('/api/auth/register') && response.request().method() === 'POST',
+  )
   await page.getByRole('button', { name: 'Create account' }).click()
+  expect((await registration).status()).toBe(201)
   await expect(page.getByRole('heading', { name: 'A little more in sync, Taylor.' })).toBeVisible()
   await page.getByRole('link', { name: '+ Add expense' }).click()
   await page.getByLabel('Expense title').fill('Internet bill')

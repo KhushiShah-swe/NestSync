@@ -260,6 +260,13 @@ The root `.env` is read by **Docker Compose**. Native Maven startup does not aut
 
 See [API.md](docs/API.md) for payloads, status values, errors, and a complete authenticated example.
 
+## Project phase reports
+
+Original project documents:
+
+- [NestSync — Project Phase I (PDF)](docs/project-reports/NestSync-Phase-I.pdf)
+- [NestSync — Project Phase II (PDF)](docs/project-reports/NestSync-Phase-II.pdf)
+
 ## Roadmap and contributions
 
 The [roadmap](docs/ROADMAP.md) organizes the next increments into proposed two-week sprints. Each GitHub issue includes a user story, business value, story points, acceptance criteria, dependencies, and a test plan. Estimates are planning suggestions, not delivery commitments.

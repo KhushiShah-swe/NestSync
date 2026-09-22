@@ -13,13 +13,13 @@ A full-stack roommate management app that brings shared expenses, chores, grocer
 ![React](https://img.shields.io/badge/React-19-149ECA?logo=react&logoColor=white)
 ![MySQL](https://img.shields.io/badge/MySQL-8.4-4479A1?logo=mysql&logoColor=white)
 
-[Quick start](#quick-start) · [Features](#what-you-can-do) · [Architecture](#architecture) · [API guide](docs/API.md) · [Roadmap](docs/ROADMAP.md)
+[🚀 Live Demo](https://nestsyncfrontend-production.up.railway.app) · [Quick start](#quick-start) · [Features](#what-you-can-do) · [Architecture](#architecture) · [API guide](docs/API.md) · [Roadmap](docs/ROADMAP.md)
 
 </div>
 
 ![NestSync dashboard with household expenses, chores, and net balances](docs/assets/dashboard.png)
 
-*Screenshot of the running application with synthetic demo records. No live public demo is configured.*
+*Screenshot of the running application with synthetic demo records. [Launch the live application](https://nestsyncfrontend-production.up.railway.app).*
 
 <details>
 <summary>See the mobile layout</summary>
@@ -36,7 +36,9 @@ This repository develops the original NestSync project into a tested portfolio M
 
 **Project owner:** [Khushi Shah](https://github.com/KhushiShah-swe)
 
-**Status:** Working local/container MVP. Production hardening and additional features are tracked in [Issues](https://github.com/KhushiShah-swe/NestSync/issues).
+**Status:** Live portfolio MVP deployed on Railway. Production hardening and additional features are tracked in [Issues](https://github.com/KhushiShah-swe/NestSync/issues).
+
+**Live application:** https://nestsyncfrontend-production.up.railway.app
 
 ## What you can do
 
@@ -226,7 +228,7 @@ When those checks pass on a push to `main`, the delivery jobs publish both image
 
 CodeQL runs Java and JavaScript analysis separately. Dependabot checks dependency, Docker image, and pinned Actions updates weekly. Third-party Actions are pinned to commit SHAs; package publishing permissions are scoped to the delivery jobs.
 
-**This is continuous delivery of container images.** Hosting, a public URL, HTTPS, production secrets, backups, and a deployment environment must be configured separately. See [Deployment and operations](docs/DEPLOYMENT.md). New GHCR packages may require an owner visibility change before anonymous pulls work.
+**Deployment:** The portfolio application is deployed on Railway with separate frontend, Spring Boot backend, and MySQL services. The public frontend proxies API requests to the deployed backend while production secrets and database credentials remain in Railway environment variables. See [Deployment and operations](docs/DEPLOYMENT.md) for deployment guidance. CI also publishes versioned container images to GHCR; new GHCR packages may require an owner visibility change before anonymous pulls work.
 
 ## Configuration
 
